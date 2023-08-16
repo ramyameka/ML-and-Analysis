@@ -1,0 +1,90 @@
+---
+title: "Human Activity Recognition Case Analysis"
+output: html_document
+---
+
+## Name: Ramya Meka
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+The four R packages loaded here are - 'dplyr', 'ggplot2', 'tidyr', and 'reshape2' - are commonly used for data manipulation, visualization, and transformation tasks. 'dplyr' provides a set of functions for data manipulation, such as filtering, grouping, and summarizing data. 'ggplot2' is a popular package for creating a wide variety of high-quality data visualizations. 'tidyr' provides a suite of functions to help organize and transform data by reshaping it into different formats. 'reshape2' is another package that provides functions for reshaping data from "wide" to "long" format and vice versa. These packages are often used together in data analysis workflows to manipulate, visualize, and transform data in order to gain insights and make informed decisions.
+
+```{r}
+library(dplyr)
+library(ggplot2)
+library(tidyr)
+library(reshape2)
+```
+
+The above code reads a CSV file named "HumanActivityRecognition.csv" from the file path and assigns it to the variable "activity_data".
+Once the CSV file is read into R, it is assigned to the variable 'activity_data'. This variable will contain the data from the CSV file in a tabular format. The data frame will have rows representing different observations or instances, and columns representing different variables or features of those observations.
+
+```{r}
+activity_data <- read.csv("/Users/ramyameka/Downloads/Case4HAR/HumanActivityRecognition.csv")
+```
+
+The 'str' function is used to display the structure of an R object. When applied to the 'activity_data' data frame, the function displays information about the structure of the data frame, including its dimensions, column names, data types, and the first few rows of data.
+
+```{r}
+str(activity_data)
+```
+
+The 'summary' function is used to generate summary statistics for the variables in an R object. When applied to a data frame such as 'activity_data', the function generates summary statistics for each numeric variable in the data frame, including the minimum value, 1st quartile, median, mean, 3rd quartile, and maximum value. It also displays the number of missing values (if any) for each variable.
+
+```{r}
+summary(activity_data)
+```
+
+The code sapply(activity_data, function(x) sum(is.na(x))) is used to count the number of missing values (NAs) in each column of the 'activity_data' data frame.
+
+The is.na() function is used to check for missing values, and the sum() function is used to count the number of NAs in each column. The sapply() function applies the function to each column of the data frame and returns a vector with the count of NAs for each column.
+
+```{r}
+sapply(activity_data, function(x) sum(is.na(x)))
+```
+
+The select() function is used to select only the columns that contain the string "mean" or "std" in their column names, as well as the "Activity" column. The %>% operator is used to pipe the output of one function to the input of the next function.The mutate() function is then used to convert the "Activity" column to a factor variable. Factors are used in R to represent categorical data, and are useful for modeling and plotting. This creates a subset of the original data frame that includes only the columns containing mean and standard deviation measurements, as well as the activity labels. This subset will be used for further analysis and modeling.
+
+
+```{r}
+activity_data_sub <- activity_data %>% 
+  select(contains("mean"), contains("std"), Activity) %>%
+  mutate(Activity = factor(Activity)) 
+```
+
+Below we use ggplot2 library in R to create a bar plot. The plot shows the distribution of activities in the activity_data_sub data frame. The ggplot() function initializes the plot and specifies the data frame and aesthetic mappings. Here, the x-axis is mapped to the "Activity" column in the activity_data_sub data frame. The geom_bar() function adds the bars to the plot, and the fill argument specifies the color of the bars. The labs() function is used to specify the axis labels and plot title. The resulting plot shows the count of observations for each activity type in the data frame, with bars colored in steel blue.
+
+```{r}
+ggplot(activity_data_sub, aes(x = Activity)) +
+  geom_bar(fill = "steelblue") +
+  labs(x = "Activity", y = "Count", title = "Distribution of Activities")
+```
+
+The resulting activity_data_sub_cor data frame contains a symmetric matrix of correlations between all pairs of variables in the subsetted data frame. This correlation matrix can be used to explore the relationships between different variables in the data frame.
+
+```{r}
+activity_data_sub_cor <- activity_data_sub %>% 
+  select(-Activity) %>% 
+  cor()
+```
+
+Next we create a heatmap plot of the correlation matrix stored in activity_data_sub_cor.
+The melt() function from the reshape2 library is used to convert the correlation matrix into a data frame with three columns: Var1, Var2, and value. The ggplot() function is used to create the plot, with Var2 on the x-axis, Var1 on the y-axis, and value determining the fill color of each tile in the plot.
+The scale_fill_gradient2() function is used to set the color scale for the plot, with blue representing negative correlations, red representing positive correlations, and white representing no correlation. The theme() function is used to rotate the x-axis labels by 90 degrees for readability. The labs() function is used to set the title and axis labels for the plot. The resulting plot allows us to visualize the strength and direction of the correlations between different variables in the data frame.
+
+```{r}
+ggplot(melt(activity_data_sub_cor), aes(x = Var2, y = Var1, fill = value)) +
+  geom_tile() +
+  scale_fill_gradient2(low = "blue", high = "red", midpoint = 0) +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) +
+  labs(x = "", y = "", title = "Correlations between Variables")
+```
+
+At last we create a boxplot of the variables in activity_data_sub dataset. Each variable is represented by a box with whiskers extending from the box indicating the variability outside the upper and lower quartiles. The main argument sets the title of the plot to "Distribution of Variables". This plot provides a visual representation of the distribution of each variable and helps to identify potential outliers and the spread of the data.
+
+```{r}
+boxplot(activity_data_sub, main = "Distribution of Variables")
+```

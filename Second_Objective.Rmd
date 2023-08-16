@@ -1,0 +1,118 @@
+---
+title: "Human Activity Recognition Case Analysis"
+output: html_document
+---
+
+## Name: Ramya Meka
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+First we import and load several R packages that are commonly used for data manipulation, visualization, modeling, and machine learning. Specifically, the packages loaded are: dplyr, tidyr, ggplot2, caret, randomForest, glmnet, xgboost, and e1071. These packages offer a range of functions and tools to clean, reshape, plot, and model data, making them a popular choice among R users for data analysis tasks.
+
+
+```{r}
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(caret)
+library(randomForest)
+library(glmnet)
+library(xgboost)
+library(e1071)
+```
+
+Next, the code reads in a csv file named "HumanActivityRecognition.csv" located at the specified file path in my laptop. It then removes any rows containing missing values using the na.omit() function. The data is then filtered to only include columns that contain the text "mean" or "std" in their names, as well as the column named "Activity". The mutate() function is then used to convert the "Activity" column to a factor, which is a categorical variable used to represent different levels or categories. This step is necessary because the "Activity" column contains the different types of activities that were performed during the data collection process.
+
+
+```{r}
+data <- read.csv("/Users/ramyameka/Downloads/Case4HAR/HumanActivityRecognition.csv")
+data <- na.omit(data) 
+data <- data %>%
+  select(contains("mean"), contains("std"), Activity) %>%
+  mutate(Activity = factor(Activity)) 
+```
+
+Next, the seed is set to a fixed number 123 to ensure the same randomization for data partitioning. Using the createDataPartition function from the caret package, the dataset is partitioned into training and testing sets with an 80/20 ratio, respectively. The training set is saved in the train variable, and the testing set is saved in the test variable. The partitioning is based on the Activity column in the data dataframe. This step is crucial as it ensures that the same proportion of each activity type is represented in both the training and testing sets, which is essential for accurate model evaluation.
+
+```{r}
+set.seed(123)
+trainIndex <- createDataPartition(data$Activity, p = 0.8, list = FALSE)
+train <- data[trainIndex, ]
+test <- data[-trainIndex, ]
+```
+
+Next we create a bar chart using the ggplot2 package, where the x-axis represents the activity types and the y-axis shows the frequency count of each activity in the dataset. The aes() function maps the Activity variable to the x-axis. The geom_bar() function is used to create the bar chart, where fill parameter fills the bars with the color 'dodgerblue'. The theme_classic() function is used to customize the theme of the plot. The resulting chart shows the distribution of activity types in the dataset, which can provide useful insights into the data distribution and class imbalance.
+
+```{r}
+ggplot(data, aes(x = Activity)) +
+  geom_bar(fill = "dodgerblue") +
+  theme_classic()
+```
+
+# Random Forest
+
+The first algorithm used is Random forest. Random forest is a popular ensemble learning method used in machine learning for both classification and regression tasks. It combines multiple decision trees to make a more accurate and robust prediction than any individual decision tree. In a random forest, each decision tree is trained on a randomly sampled subset of the training data, and at each node of the tree, a random subset of features is selected as potential split candidates. This randomness helps to reduce overfitting and makes the model more robust to noise and outliers in the data. The final prediction is obtained by aggregating the predictions of all decision trees in the forest. Random forest is widely used due to its high accuracy, scalability, and ability to handle a large number of input features.
+
+The code below sets a seed for reproducibility and then builds a random forest model (rf_model) using the randomForest function from the randomForest package in R. The model is built using the training data (train) and uses all variables (except the activity variable) as predictors to predict the Activity. The ntree argument is set to 500, which is the number of trees to grow in the forest. The predict function is then used to make predictions on the test data (test) using the rf_model. Finally, the confusionMatrix function from the caret package is used to calculate the confusion matrix between the predicted and actual Activity values in the test data. The confusion matrix provides information on the performance of the model by indicating the number of true positives, false positives, true negatives, and false negatives.
+
+
+```{r}
+set.seed(123)
+rf_model <- randomForest(Activity ~ ., data = train, ntree = 500)
+rf_pred <- predict(rf_model, newdata = test)
+confusionMatrix(rf_pred, test$Activity)
+```
+
+#### OUTPUT:
+
+The output shows the confusion matrix and various statistics generated by a random forest model. The confusion matrix shows the number of correct and incorrect predictions made by the model on the test data for each activity label. The rows of the matrix represent the predicted activity labels, and the columns represent the true activity labels. The Overall Statistics section reports the accuracy of the model, the Kappa statistic, and the p-value of the McNemar's test. The Statistics by Class section reports sensitivity, specificity, positive predictive value, negative predictive value, prevalence, detection rate, detection prevalence, and balanced accuracy for each activity label. Sensitivity represents the proportion of true positives predicted correctly, while specificity represents the proportion of true negatives predicted correctly. Positive predictive value is the proportion of true positives out of all predicted positives, while negative predictive value is the proportion of true negatives out of all predicted negatives. Prevalence represents the proportion of each activity label in the test data. Detection rate is the proportion of actual positives detected correctly, while detection prevalence is the proportion of predicted positives. Finally, balanced accuracy is the average of sensitivity and specificity, and is a more reliable measure of classification performance when classes are imbalanced.
+
+
+# Naive Bayes
+
+The second algorithm I used is Naive Bayes. It is a probabilistic algorithm used for classification tasks in machine learning. It is based on Bayes' theorem, which describes the probability of an event occurring based on prior knowledge of conditions that might be related to the event. Naive Bayes is considered "naive" because it assumes that all features used to predict the class are independent of each other, which is often not true in practice. Despite this limitation, Naive Bayes can still perform well in many cases, especially when the number of features is large relative to the size of the dataset. It is commonly used in text classification and spam filtering, among other applications.
+
+The code initializes a naive Bayes model by fitting it to the training set using the naiveBayes() function from the e1071 package. The fitted model is then used to make predictions on the test set using the predict() function. Finally, the performance of the model is evaluated by computing the confusion matrix between the predicted and actual activity labels in the test set using the confusionMatrix() function from the caret package. The resulting confusion matrix provides a summary of the model's performance in terms of its accuracy, precision, recall, and other measures.
+
+
+```{r}
+nb_model <- naiveBayes(Activity ~ ., data = train)
+nb_pred <- predict(nb_model, newdata = test)
+confusionMatrix(nb_pred, test$Activity)
+```
+
+#### OUTPUT 
+
+This output is from a Naive Bayes classifier that was trained on a dataset with six activity classes: LAYING, SITTING, STANDING, WALKING, WALKING_DOWNSTAIRS, and WALKING_UPSTAIRS. The confusion matrix shows the predicted class for each instance in the test set and compares it to the actual class. The rows represent the predicted classes, and the columns represent the actual classes.
+
+For example, the confusion matrix shows that there were 300 instances in the test set that were actually LAYING, and the classifier correctly predicted them as LAYING. However, there were also 181 instances that were actually SITTING, but the classifier predicted them as LAYING.
+
+The overall statistics section provides a summary of the classifier's performance on the test set. The accuracy of the classifier is 0.5615, which means that it correctly classified 56.15% of the instances in the test set. The kappa value of 0.472 indicates moderate agreement between the predicted and actual classes.
+
+The statistics by class section provides information about the classifier's performance on each individual class. Sensitivity measures the proportion of instances of a class that were correctly classified by the classifier, while specificity measures the proportion of instances not of a class that were correctly classified as not being of that class. Pos Pred Value is the positive predictive value, which measures the proportion of instances predicted to be of a class that were actually of that class. Neg Pred Value is the negative predictive value, which measures the proportion of instances predicted not to be of a class that were actually not of that class. Prevalence is the proportion of instances in the test set that belong to a particular class. Detection Rate is the proportion of instances of a class that were correctly classified by the classifier, and Detection Prevalence is the proportion of instances predicted to be of a class. Balanced Accuracy is the average of sensitivity and specificity.
+
+For example, the sensitivity of the LAYING class is 0.7812, which means that the classifier correctly classified 78.12% of instances that were actually LAYING. The specificity of the LAYING class is 0.7848, which means that the classifier correctly classified 78.48% of instances that were not LAYING as not being LAYING. The Pos Pred Value for the LAYING class is 0.4545, which means that only 45.45% of instances predicted to be LAYING were actually LAYING. The Neg Pred Value for the LAYING class is 0.9399, which means that 93.99% of instances predicted not to be LAYING were actually not LAYING. The prevalence of the LAYING class is 0.1867, which means that 18.67% of instances in the test set were actually LAYING. The Detection Rate for the LAYING class is 0.1458, which means that the classifier correctly classified 14.58% of instances that were actually LAYING. The Detection Prevalence for the LAYING class is 0.3209, which means that the classifier predicted that 32.09% of instances in the test set were LAYING. The Balanced Accuracy for the LAYING class is 0.7830, which is the average of sensitivity and specificity.
+
+# Linear Regression
+
+The third algorithm used is Linear Regression. It is a statistical method used to model the relationship between a dependent variable (often denoted as Y) and one or more independent variables (often denoted as X). The goal of linear regression is to find the best-fit line that can explain the variation in the dependent variable based on the independent variables. The line is represented by a mathematical equation of the form Y = a + bX, where a is the intercept, b is the slope, and X is the independent variable. Linear regression is often used in data analysis, prediction, and forecasting tasks. It is a simple and widely used approach in statistical modeling and provides a basic tool for understanding the relationship between variables.
+
+The above code performs linear regression on the training data using the lm() function from the base R package. The dependent variable is Activity and the independent variables are all the other variables in the train data frame. The predict() function is then used to generate predictions on the test data set. The predicted values are then capped at 1 and 6 using the ifelse() function, and converted to a factor with levels 1 through 6 using the factor() function. The actual labels from the test data set are also converted to a factor with levels 1 through 6. Finally, the confusionMatrix() function from the caret package is used to generate a confusion matrix that shows the accuracy of the predictions compared to the actual labels in the test data set.
+
+```{r}
+lm_model <- lm(Activity ~ ., data = train)
+lm_pred <- predict(lm_model, newdata = test)
+lm_pred <- factor(ifelse(lm_pred < 1, 1, ifelse(lm_pred > 6, 6, lm_pred)), levels = 1:6)
+test_labels <- factor(test$Activity, levels = 1:6)
+confusionMatrix(lm_pred, test_labels)
+```
+
+#### OUTPUT
+
+The "Overall Statistics" section indicates that the accuracy, 95% confidence interval, and no information rate are not available, and the p-value for accuracy is also not applicable. The Kappa statistic is also not available.
+
+The "Statistics by Class" section shows that there is no sensitivity, specificity, positive predictive value (PPV), negative predictive value (NPV), prevalence, detection rate, detection prevalence, or balanced accuracy available for any of the six classes.
+
+
